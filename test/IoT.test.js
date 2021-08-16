@@ -30,35 +30,53 @@ contract('IoT', (accounts) => {
 
     
     it('creates tasks', async () => {
-                for (var i = 2; i <= 50; i++) {
-                    const result = await this.ioT.createTask(i, 'Timestamp: Today Baby Jarvis', 'Test desc', 'Test entity type', 1, 2, 3, 1, 2)
+        //readTextFile("file:///C:/Users/cob.edge.uat/source/repos/IoT-Simulator-Emulator-main/Dump%20Messages/14-08-2021_22_05_44.79544637.txt");
 
-                    /*
-                    const taskCount = await this.ioT.taskCount()
-            
-                    assert.equal(taskCount, 2)
-                    const event = result.logs[0].args
-            
-                    assert.equal(event.id.toNumber(), 2)
-                    assert.equal(event.timestamp, 'Timestamp: Today Baby Jarvis')
-                    assert.equal(event.desc, 'Test desc')
-                    assert.equal(event.entityType, 'Test entity type')
-                    assert.equal(event.v1.toNumber(), 1)
-                    assert.equal(event.v2.toNumber(), 2)
-                    assert.equal(event.v3.toNumber(), 3)
-                    assert.equal(event.latitude.toNumber(), 1)
-                    assert.equal(event.longitude.toNumber(), 2)
-                    */
+        for (var i = 2; i <= 1000; i++) {
+            const result = await this.ioT.createTask(i, 'Timestamp: Today Baby Jarvis', 'Test desc', 'Test entity type', 1, 2, 3, 1, 2)
 
-                    sleep(300) //introduced to stop ganache crashing 
-                }
+            /*
+            const taskCount = await this.ioT.taskCount()
+            assert.equal(taskCount, 2)
+            const event = result.logs[0].args
+            assert.equal(event.id.toNumber(), 2)
+            assert.equal(event.timestamp, 'Timestamp: Today Baby Jarvis')
+            assert.equal(event.desc, 'Test desc')
+            assert.equal(event.entityType, 'Test entity type')
+            assert.equal(event.v1.toNumber(), 1)
+            assert.equal(event.v2.toNumber(), 2)
+            assert.equal(event.v3.toNumber(), 3)
+            assert.equal(event.latitude.toNumber(), 1)
+            assert.equal(event.longitude.toNumber(), 2)
+            */
+
+            sleep(350) //introduced to stop ganache crashing 
+        }
     })
-
-    function sleep(milliseconds) {
-        const date = Date.now();
-        let currentDate = null;
-        do {
-            currentDate = Date.now();
-        } while (currentDate - date < milliseconds);
-    }
 })
+
+
+
+function readTextFile(file) {
+    var XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
+    var rawFile = new XMLHttpRequest();
+    rawFile.open("GET", file, false);
+    rawFile.onreadystatechange = function () {
+        if (rawFile.readyState === 4) {
+            if (rawFile.status === 200 || rawFile.status == 0) {
+                var allText = rawFile.responseText;
+                //alert(allText);
+            }
+        }
+    }
+    rawFile.send(null);
+    console.log(rawFile.responseText)
+}
+
+function sleep(milliseconds) {
+    const date = Date.now();
+    let currentDate = null;
+    do {
+        currentDate = Date.now();
+    } while (currentDate - date < milliseconds);
+}
