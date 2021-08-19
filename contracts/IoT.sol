@@ -44,12 +44,6 @@ contract IoT {
     emit TaskCreated(_id, _timestamp, _desc, _entityType, _v1, _v2, _v3, _latitude, _longitude);
   }
 
- 
-
-  
-
-
-
   function toggleCompleted(uint _id) public {
     //Task memory _task = tasks[_id];
     //_task.completed = !_task.completed;
