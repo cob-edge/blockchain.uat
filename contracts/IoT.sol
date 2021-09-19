@@ -1,7 +1,12 @@
-pragma solidity ^0.5.0;
+pragma solidity >= 0.5.0 < 0.7.0;
 
 contract IoT {
   uint public taskCount = 0;
+  string public payload;
+
+  function setPayload(string memory content) public {
+    payload = content;
+  }
 
   struct Task {
     uint id;
@@ -44,12 +49,6 @@ contract IoT {
     emit TaskCreated(_id, _timestamp, _desc, _entityType, _v1, _v2, _v3, _latitude, _longitude);
   }
 
- 
-
-  
-
-
-
   function toggleCompleted(uint _id) public {
     //Task memory _task = tasks[_id];
     //_task.completed = !_task.completed;
@@ -57,4 +56,7 @@ contract IoT {
     //emit TaskCompleted(_id, _task.completed);
   }
 
+  function sayHello() public pure returns (string memory) {
+        return '--Updated Contract--';
+  }
 }

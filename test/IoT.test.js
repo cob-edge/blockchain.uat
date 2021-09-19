@@ -20,7 +20,7 @@ contract('IoT', (accounts) => {
     assert.equal(task.id.toNumber(), taskCount.toNumber())
     assert.equal(task.timestamp, 'timestamp')
     assert.equal(task.desc, 'desc')
-      assert.equal(task.entityType, 'entityType')
+    assert.equal(task.entityType, 'entityType')
     assert.equal(task.v1.toNumber(), 1)
     assert.equal(task.v2.toNumber(), 1)
     assert.equal(task.v3.toNumber(), 1)
@@ -50,7 +50,7 @@ contract('IoT', (accounts) => {
             assert.equal(event.longitude.toNumber(), 2)
             */
 
-            sleep(350) //introduced to stop ganache crashing 
+            sleep(600) //introduced to stop ganache crashing 
         }
     })
 })

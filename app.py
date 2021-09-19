@@ -1,46 +1,75 @@
-#!/usr/bin/python
-# -*- coding: utf-8 -*-
+# Edge Test python file
 
-# Copyright (c) 2016 Roger Light <roger@atchoo.org>
+#import paho.mqtt.client as mqtt
+#import time
 #
-# All rights reserved. This program and the accompanying materials
-# are made available under the terms of the Eclipse Distribution License v1.0
-# which accompanies this distribution.
+#def on_log(client, userdata, level, buf):
+	#print("log: " + buf)
 #
-# The Eclipse Distribution License is available at
-#   http://www.eclipse.org/org/documents/edl-v10.php.
+#def on_connect(client, userdata, flags, rc):
+	#if rc == 0:
+	#	print("Successfully connected")
+	#else:
+	#	print("Error connecting, returned: ", rc)
 #
-# Contributors:
-#    Roger Light - initial implementation
+#def on_disconnect(client, userdata, flags, rc = 0):
+	#print("Disconnected from client: " + str(rc))
+#
+#def on_message(client, userdata, msg):
+	#topic = msg.topic
+	#m_decode = str(msg.payload.decode("utf-8"))
+	#print("Message received", m_decode)
+#
+#broker = "broker.hivemq.com"
+#client = mqtt.Client("cob-edge-1", clean_session = False)
+#
+#client.on_connect = on_connect
+#client.on_disconnect = on_disconnect
+#client.on_message = on_message
+##client.on_log = on_log
+#
+#print("Connecting to broker:", broker)
+#
+#time.sleep(2)
+#
+#client.connect(broker)
+#client.loop_start()
+#client.subscribe("CTI/Sensors/#")
+#client.publish("CTI/Sensors/")
+#
+#time.sleep(20)
+#
+#client.loop_stop()
+#client.disconnect()
 
-# This shows an example of using the subscribe.simple helper function. JARVIS WAS HERE
-
-#import context  # Ensures paho is in PYTHONPATH
-#import paho.mqtt.subscribe as subscribe
-
-#topics = ['CTI/Sensors/#']
-
-#m = subscribe.simple(topics, hostname="broker.hivemq.com", retained=False, msg_count=2)
-#for a in m:
-#    print(a.topic)
-#    print(a.payload)
-
-
+# End of file
 
 import json
 from web3 import Web3, HTTPProvider
 
 # truffle development blockchain address
-blockchain_address = 'http://127.0.0.1:7545'
+#blockchain_address = 'http://127.0.0.1:9545'
+
+# ganache development blockchain address
+blockchain_address = 'http://127.0.0.1:8545'
+
 # Client instance to interact with the blockchain
 web3 = Web3(HTTPProvider(blockchain_address))
+
 # Set the default account (so we don't need to set the "from" for every transaction call)
 web3.eth.defaultAccount = web3.eth.accounts[0]
 
 # Path to the compiled contract JSON file
 compiled_contract_path = 'build/contracts/IoT.json'
+
 # Deployed contract address (see `migrate` command output: `contract address`)
-deployed_contract_address = '0xD18BD733d43Ea1a76Bd80Ec097426033Da62f471'
+deployed_contract_address = '0x07A05C601b16616bc46A7b74fCA9F0285331777c'
+
+# truffle transaction address
+#0x53F10682Fd87AB7CC41c4701DB41eb6bB0bBF522
+
+# ganache transaction address
+#0x07A05C601b16616bc46A7b74fCA9F0285331777c
 
 with open(compiled_contract_path) as file:
     contract_json = json.load(file)  # load contract info as JSON
@@ -50,6 +79,14 @@ with open(compiled_contract_path) as file:
 contract = web3.eth.contract(address=deployed_contract_address, abi=contract_abi)
 
 # Call contract function (this is not persisted to the blockchain)
-#message = contract.functions.sayHello().call()
+message = contract.functions.sayHello().call()
+print(message)
 
-#print(message)
+#contract.functions.createTask(1, 'timestamp', 'hello world', 'Static', 22, 100, 2, 1234567, 875432).transact()
+
+tx_hash = contract.functions.setPayload('SetPayload Function').transact()
+
+tx_receipt = web3.eth.waitForTransactionReceipt(tx_hash)
+print('tx_hash: {}'.format(tx_hash.hex()))
+
+print('\n')
