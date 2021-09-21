@@ -63,13 +63,18 @@ web3.eth.defaultAccount = web3.eth.accounts[0]
 compiled_contract_path = 'build/contracts/IoT.json'
 
 # Deployed contract address (see `migrate` command output: `contract address`)
-deployed_contract_address = '0x07A05C601b16616bc46A7b74fCA9F0285331777c'
+deployed_contract_address = '0x918785Aed064773FEC58c759DdA90Bb234F7ddFd'
 
 # truffle transaction address
 #0x53F10682Fd87AB7CC41c4701DB41eb6bB0bBF522
 
-# ganache transaction address
+# ganache transaction address Hot-Duck
 #0x07A05C601b16616bc46A7b74fCA9F0285331777c
+
+# ganache transaction address COB-Edge
+#0x918785Aed064773FEC58c759DdA90Bb234F7ddFd
+
+print('--Program Executing--')
 
 with open(compiled_contract_path) as file:
     contract_json = json.load(file)  # load contract info as JSON
@@ -78,15 +83,15 @@ with open(compiled_contract_path) as file:
 # Fetch deployed contract reference
 contract = web3.eth.contract(address=deployed_contract_address, abi=contract_abi)
 
-# Call contract function (this is not persisted to the blockchain)
-message = contract.functions.sayHello().call()
-print(message)
+# Call contract function (this is persisted to the blockchain)
+#tx_hash = contract.functions.setPayload('').transact()
 
-#contract.functions.createTask(1, 'timestamp', 'hello world', 'Static', 22, 100, 2, 1234567, 875432).transact()
+#tx_receipt = web3.eth.waitForTransactionReceipt(tx_hash)
+#print('tx_hash: {}'.format(tx_hash.hex()))
 
-tx_hash = contract.functions.setPayload('SetPayload Function').transact()
+contract.functions.createTask(1, 'timestamp', 'hello world', 'Static', 22, 100, 2, 1234567, 875432).transact()
 
-tx_receipt = web3.eth.waitForTransactionReceipt(tx_hash)
-print('tx_hash: {}'.format(tx_hash.hex()))
+#message = contract.functions.sayHello().call()
+#print(message)
 
-print('\n')
+print('--End Execution--')
