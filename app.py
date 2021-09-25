@@ -1,27 +1,28 @@
-# Edge Test python file
+# Paho MQTT Script
 
 #import paho.mqtt.client as mqtt
 #import time
 #
 #def on_log(client, userdata, level, buf):
-	#print("log: " + buf)
+#	print("log: " + buf)
 #
 #def on_connect(client, userdata, flags, rc):
-	#if rc == 0:
-	#	print("Successfully connected")
-	#else:
-	#	print("Error connecting, returned: ", rc)
+#	if rc == 0:
+#		print("Successfully connected")
+#	else:
+#		print("Error connecting, returned: ", rc)
 #
 #def on_disconnect(client, userdata, flags, rc = 0):
-	#print("Disconnected from client: " + str(rc))
+#	print("Disconnected from client: " + str(rc))
 #
 #def on_message(client, userdata, msg):
-	#topic = msg.topic
-	#m_decode = str(msg.payload.decode("utf-8"))
-	#print("Message received", m_decode)
+#	topic = msg.topic
+#	m_decode = str(msg.payload.decode("utf-8"))
+#	if m_decode:
+#		print("Message received", m_decode)
 #
 #broker = "broker.hivemq.com"
-#client = mqtt.Client("cob-edge-1", clean_session = False)
+#client = mqtt.Client("cob-edge-1", clean_session = True)
 #
 #client.on_connect = on_connect
 #client.on_disconnect = on_disconnect
@@ -30,22 +31,39 @@
 #
 #print("Connecting to broker:", broker)
 #
-#time.sleep(2)
-#
 #client.connect(broker)
 #client.loop_start()
 #client.subscribe("CTI/Sensors/#")
 #client.publish("CTI/Sensors/")
 #
-#time.sleep(20)
+#time.sleep(2)
 #
-#client.loop_stop()
-#client.disconnect()
+#run = True
+#Timeout = 25
+#
+#print("Waiting for messages...")
+#
+#while run:
+#	client._msgtime_mutex.acquire()
+#	client._msgtime_mutex.release()
+#	last_msg_in = client._last_msg_in
+#
+#	now = time.monotonic()
+#
+#	if now - last_msg_in > Timeout:
+#		print("No messages to send \nDisconnecting...")
+#		client.loop_stop()
+#		client.disconnect()
+#		run = False
+#
+#time.sleep(2)
 
 # End of file
 
 import json
 from web3 import Web3, HTTPProvider
+
+print('--Program Executing--')
 
 # truffle development blockchain address
 #blockchain_address = 'http://127.0.0.1:9545'
@@ -74,8 +92,6 @@ deployed_contract_address = '0x918785Aed064773FEC58c759DdA90Bb234F7ddFd'
 # ganache transaction address COB-Edge
 #0x918785Aed064773FEC58c759DdA90Bb234F7ddFd
 
-print('--Program Executing--')
-
 with open(compiled_contract_path) as file:
     contract_json = json.load(file)  # load contract info as JSON
     contract_abi = contract_json['abi']  # fetch contract's abi - necessary to call its functions
@@ -89,7 +105,7 @@ contract = web3.eth.contract(address=deployed_contract_address, abi=contract_abi
 #tx_receipt = web3.eth.waitForTransactionReceipt(tx_hash)
 #print('tx_hash: {}'.format(tx_hash.hex()))
 
-contract.functions.createTask(1, 'timestamp', 'hello world', 'Static', 22, 100, 2, 1234567, 875432).transact()
+contract.functions.createTask(2, 'timestamp', 'second test', 'Vehcile', 18, 79, 5, 1534188, 7220981).transact()
 
 #message = contract.functions.sayHello().call()
 #print(message)
