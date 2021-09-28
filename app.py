@@ -85,10 +85,10 @@ while run:
 
 	now = time.monotonic()
 
-	print(now - last_msg_in)
+	#print(now - last_msg_in)
 
 	# Call contract function (this is persisted to the blockchain)
-	#contract.functions.createTask(2, 'timestamp', 'Ganache IoT contract test', 'Vehicle', 18, 79, 5, 1534188, 7220981).transact()
+	contract.functions.createTask(2, 'timestamp', 'Ganache IoT contract test', 'Vehicle', 18, 79, 5, 1534188, 7220981).transact()
 
 	if now - last_msg_in > Timeout:
 		print("No messages to send \nDisconnecting...")
