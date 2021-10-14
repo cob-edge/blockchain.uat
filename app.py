@@ -26,6 +26,41 @@ def on_message(client, userdata, msg):
 	m_decode = str(msg.payload.decode("utf-8"))
 	if m_decode:
 		print("Message received", m_decode)
+		set_IoT(str(m_decode))
+
+def set_IoT(msg):
+	#print("Message to change " + msg)
+	jsonMsg = json.loads(msg)
+
+	arr = []
+
+	id = jsonMsg["id"]
+	timestamp = jsonMsg["Timestamp"]
+	desc = jsonMsg["Desc"]
+	type = jsonMsg["EntityType"]
+	v1 = jsonMsg["v1"]
+	v2 = jsonMsg["v2"]
+	v3 = jsonMsg["v3"]
+	Latitude = jsonMsg["Latitude"]
+	Longitude = jsonMsg["Longitude"]
+
+	iot = IoT(id, timestamp, desc, type, v1, v2, v3, Latitude, Longitude)
+	arr.append(iot)
+
+	for iot in arr:
+		print(iot)
+
+class IoT: 
+    def __init__(self, id, timestamp, desc, type, v1, v2, v3, lat, long):
+        self.id = id
+        self.timestamp = timestamp
+        self.desc = desc
+        self.type = type
+        self.v1 = v1
+        self.v2 = v2
+        self.v3 = v3
+        self.lat = lat
+        self.long = long
 
 broker = "broker.hivemq.com"
 client = mqtt.Client("cob-edge-1", clean_session = True)
@@ -43,7 +78,7 @@ web3.eth.defaultAccount = web3.eth.accounts[0]
 compiled_contract_path = 'build/contracts/IoT.json'
 
 # Deployed contract address (see `migrate` command output: `contract address`)
-deployed_contract_address = '0x3A6Af68aC79D9F1560D1dA7a71F4B9375BA990DA'
+deployed_contract_address = '0x86De48fE37911092959d56F01A70F227CC4DB55d'
 
 server = 'tcp:cob-edge.database.windows.net' 
 database = 'IoTDB' 
@@ -74,21 +109,20 @@ contract = web3.eth.contract(address=deployed_contract_address, abi=contract_abi
 time.sleep(2)
 
 run = True
-Timeout = 25
+Timeout = 30
 
 print("Waiting for messages...")
 
 while run:
 	client._msgtime_mutex.acquire()
-	client._msgtime_mutex.release()
+	client._msgtime_mutex.release() 
+	
 	last_msg_in = client._last_msg_in
 
 	now = time.monotonic()
 
 	#print(now - last_msg_in)
-
-	# Call contract function (this is persisted to the blockchain)
-	contract.functions.createTask(2, 'timestamp', 'Ganache IoT contract test', 'Vehicle', 18, 79, 5, 1534188, 7220981).transact()
+	#add lag potench
 
 	if now - last_msg_in > Timeout:
 		print("No messages to send \nDisconnecting...")
@@ -96,7 +130,13 @@ while run:
 		client.disconnect()
 		run = False
 
+#push with while loop into Ganache
+# Call contract function (this is persisted to the blockchain)
+#contract.functions.createTask(2, 'timestamp', 'Ganache IoT contract test', 'Vehicle', 18, 79, 5, 1534188, 7220981).transact()
+
 time.sleep(2)
+
+#Runs command to take new text files and push into SQL
 
 rows = numpy.array(pandas.read_csv("blocks.csv"))
 
@@ -140,6 +180,8 @@ print ("Updated Transactions Table in database")
 
 # ganache transaction address COB-Edge
 #0x918785Aed064773FEC58c759DdA90Bb234F7ddFd
+
+#0x86De48fE37911092959d56F01A70F227CC4DB55d
 
 # Call contract function (this is persisted to the blockchain)
 #contract.functions.createTask(2, 'timestamp', 'second test', 'Vehicle', 18, 79, 5, 1534188, 7220981).transact()
