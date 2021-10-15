@@ -25,14 +25,12 @@ def on_message(client, userdata, msg):
 	topic = msg.topic
 	m_decode = str(msg.payload.decode("utf-8"))
 	if m_decode:
-		print("Message received", m_decode)
+		#print("Message received", m_decode)
 		set_IoT(str(m_decode))
 
 def set_IoT(msg):
 	#print("Message to change " + msg)
 	jsonMsg = json.loads(msg)
-
-	arr = []
 
 	id = jsonMsg["id"]
 	timestamp = jsonMsg["Timestamp"]
@@ -47,8 +45,7 @@ def set_IoT(msg):
 	iot = IoT(id, timestamp, desc, type, v1, v2, v3, Latitude, Longitude)
 	arr.append(iot)
 
-	for iot in arr:
-		print(iot)
+	print("IoT Object: ", iot)
 
 class IoT: 
     def __init__(self, id, timestamp, desc, type, v1, v2, v3, lat, long):
@@ -61,6 +58,9 @@ class IoT:
         self.v3 = v3
         self.lat = lat
         self.long = long
+    
+    def __str__(self):
+	    return str(self.__dict__)
 
 broker = "broker.hivemq.com"
 client = mqtt.Client("cob-edge-1", clean_session = True)
@@ -78,7 +78,7 @@ web3.eth.defaultAccount = web3.eth.accounts[0]
 compiled_contract_path = 'build/contracts/IoT.json'
 
 # Deployed contract address (see `migrate` command output: `contract address`)
-deployed_contract_address = '0x86De48fE37911092959d56F01A70F227CC4DB55d'
+deployed_contract_address = '0x8fA20508f768806159A9Eb57c08dfA98748E33d7'
 
 server = 'tcp:cob-edge.database.windows.net' 
 database = 'IoTDB' 
@@ -86,6 +86,7 @@ username = 'cob.edge.admin'
 password = 'Aoed7Test' 
 cnxn = pyodbc.connect('DRIVER={ODBC Driver 17 for SQL Server};SERVER='+server+';DATABASE='+database+';UID='+username+';PWD='+ password)
 cursor = cnxn.cursor()
+arr = []
 
 client.on_connect = on_connect
 client.on_disconnect = on_disconnect
@@ -130,17 +131,20 @@ while run:
 		client.disconnect()
 		run = False
 
-#push with while loop into Ganache
-# Call contract function (this is persisted to the blockchain)
-#contract.functions.createTask(2, 'timestamp', 'Ganache IoT contract test', 'Vehicle', 18, 79, 5, 1534188, 7220981).transact()
+# Call contract function and push IoT data into blockchain (this is persisted to the blockchain)
+for iot in arr:
+	#print("IoT Object: ", iot)
+	latitude = iot.lat
+	longitude = iot.long
+	contract.functions.createTask(iot.id, iot.timestamp, iot.desc, iot.type, iot.v1, iot.v2, iot.v3, str(latitude), str(longitude)).transact()
 
 time.sleep(2)
 
-#Runs command to take new text files and push into SQL
+# Runs command to take new text files and push into SQL
 
 rows = numpy.array(pandas.read_csv("blocks.csv"))
 
-#Insert query for Blocks
+# Insert query for Blocks
 for row in rows:
 	try:
 		count = cursor.execute("""
@@ -157,7 +161,7 @@ print ("Updated Block Table in database")
 
 rows = numpy.array(pandas.read_csv("transactions.csv"))
 
-#Insert query for Transactions
+# Insert query for Transactions
 for row in rows:
 	try:
 		count = cursor.execute("""
@@ -175,13 +179,5 @@ print ("Updated Transactions Table in database")
 # truffle development blockchain address
 #blockchain_address = 'http://127.0.0.1:9545'
 
-# ganache transaction address Hot-Duck
-#0x3A6Af68aC79D9F1560D1dA7a71F4B9375BA990DA
-
 # ganache transaction address COB-Edge
-#0x918785Aed064773FEC58c759DdA90Bb234F7ddFd
-
-#0x86De48fE37911092959d56F01A70F227CC4DB55d
-
-# Call contract function (this is persisted to the blockchain)
-#contract.functions.createTask(2, 'timestamp', 'second test', 'Vehicle', 18, 79, 5, 1534188, 7220981).transact()
+#0x8fA20508f768806159A9Eb57c08dfA98748E33d7

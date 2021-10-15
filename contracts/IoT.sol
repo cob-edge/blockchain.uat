@@ -16,8 +16,8 @@ contract IoT {
     uint v1;
     uint v2;
     uint v3;
-    uint latitude;
-    uint longitude;
+    string latitude;
+    string longitude;
   }
 
   mapping(uint => Task) public tasks;
@@ -30,8 +30,8 @@ contract IoT {
     uint v1,
     uint v2,
     uint v3,
-    uint latitude,
-    uint longitude
+    string latitude,
+    string longitude
   );
 
   event TaskCompleted(
@@ -40,10 +40,10 @@ contract IoT {
   );
 
   constructor() public {
-    createTask(1, "timestamp", "desc", "entityType", 1, 1, 1, 1, 1);
+    createTask(1, "timestamp", "desc", "entityType", 1, 1, 1, "latitude", "longitude");
   }
 
-  function createTask(uint _id, string memory _timestamp, string memory _desc, string memory _entityType, uint _v1, uint _v2, uint _v3, uint _latitude, uint _longitude) public {
+  function createTask(uint _id, string memory _timestamp, string memory _desc, string memory _entityType, uint _v1, uint _v2, uint _v3, string memory _latitude, string memory _longitude) public {
     taskCount ++;
     tasks[taskCount] = Task(_id, _timestamp, _desc, _entityType, _v1, _v2, _v3, _latitude, _longitude);
     emit TaskCreated(_id, _timestamp, _desc, _entityType, _v1, _v2, _v3, _latitude, _longitude);
