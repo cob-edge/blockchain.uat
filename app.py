@@ -4,7 +4,6 @@ import random
 import pyodbc 
 import numpy
 import pandas
-#import context
 import paho.mqtt.client as mqtt
 import paho.mqtt.subscribe as subscribe
 from web3 import Web3, HTTPProvider
@@ -25,11 +24,39 @@ def on_message(client, userdata, msg):
 	topic = msg.topic
 	m_decode = str(msg.payload.decode("utf-8"))
 	if m_decode:
-		#print("Message received", m_decode)
 		set_IoT(str(m_decode))
+		#print("Message received", m_decode)
 
+def getUser_ID():
+    count = cursor.execute("SELECT u.[User_ID], v.[Vehicle_ID] FROM [dbo].[Vehicle] v LEFT JOIN [dbo].[User] u ON v.[User_ID] = u.[User_ID]")
+    user_result = count.fetchall()
+
+    for row in user_result:
+        users.append(row[0])
+    
+    #print(users)
+    return users
+
+def getVehicle_ID():
+    count = cursor.execute("SELECT u.[User_ID], v.[Vehicle_ID] FROM [dbo].[Vehicle] v LEFT JOIN [dbo].[User] u ON v.[User_ID] = u.[User_ID]")
+    vehicles_result = count.fetchall()
+
+    for row in vehicles_result:
+        vehicles.append(row[1])
+    
+    #print(vehicles)
+    return vehicles
+
+def getMulti_ID():
+    for i in vehicles:
+        multi[0].append(i)
+
+    for j in users:
+        multi[1].append(j)
+
+    print(multi)
+    
 def set_IoT(msg):
-	#print("Message to change " + msg)
 	jsonMsg = json.loads(msg)
 
 	id = jsonMsg["id"]
@@ -45,8 +72,6 @@ def set_IoT(msg):
 	iot = IoT(id, timestamp, desc, type, v1, v2, v3, Latitude, Longitude)
 	arr.append(iot)
 
-	print("IoT Object: ", iot)
-
 class IoT: 
     def __init__(self, id, timestamp, desc, type, v1, v2, v3, lat, long):
         self.id = id
@@ -59,8 +84,8 @@ class IoT:
         self.lat = lat
         self.long = long
     
-    def __str__(self):
-	    return str(self.__dict__)
+def __str__(self):
+	return str(self.__dict__)
 
 broker = "broker.hivemq.com"
 client = mqtt.Client("cob-edge-1", clean_session = True)
@@ -87,6 +112,9 @@ password = 'Aoed7Test'
 cnxn = pyodbc.connect('DRIVER={ODBC Driver 17 for SQL Server};SERVER='+server+';DATABASE='+database+';UID='+username+';PWD='+ password)
 cursor = cnxn.cursor()
 arr = []
+users = []
+vehicles = []
+multi = [[], []]
 
 client.on_connect = on_connect
 client.on_disconnect = on_disconnect
@@ -107,7 +135,12 @@ with open(compiled_contract_path) as file:
 # Fetch deployed contract reference
 contract = web3.eth.contract(address=deployed_contract_address, abi=contract_abi)
 
+getUser_ID()
+getVehicle_ID()
+
 time.sleep(2)
+
+getMulti_ID()
 
 run = True
 Timeout = 30
@@ -117,13 +150,13 @@ print("Waiting for messages...")
 while run:
 	client._msgtime_mutex.acquire()
 	client._msgtime_mutex.release() 
-	
 	last_msg_in = client._last_msg_in
 
 	now = time.monotonic()
+	#print("IoT Object: ", iot)
 
+	# Counter for the MQTT message timeout
 	#print(now - last_msg_in)
-	#add lag potench
 
 	if now - last_msg_in > Timeout:
 		print("No messages to send \nDisconnecting...")
@@ -131,16 +164,25 @@ while run:
 		client.disconnect()
 		run = False
 
+# Get and print the size of the IoT array
+size = len(arr)
+print(size)
+
 # Call contract function and push IoT data into blockchain (this is persisted to the blockchain)
-for iot in arr:
-	#print("IoT Object: ", iot)
-	latitude = iot.lat
-	longitude = iot.long
-	contract.functions.createTask(iot.id, iot.timestamp, iot.desc, iot.type, iot.v1, iot.v2, iot.v3, str(latitude), str(longitude)).transact()
+#for iot in arr:
+#	print("IoT Object: ", iot)
+#	latitude = iot.lat
+#	longitude = iot.long
+#	contract.functions.createTask(iot.id, iot.timestamp, iot.desc, iot.type, iot.v1, iot.v2, iot.v3, str(latitude), str(longitude)).transact()
+#	time.sleep(2)
 
 time.sleep(2)
 
-# Runs command to take new text files and push into SQL
+# Runs command to take new csv files and push into SQL
+# Gas price: 206404321000
+#Query to get all Vehicle_ID's for a user id 
+
+#query that gets 2 arrays, one is user id's other is asscoaited vehicle id, then searches and gets random valid vehicle id for user id'
 
 rows = numpy.array(pandas.read_csv("blocks.csv"))
 
@@ -165,9 +207,9 @@ rows = numpy.array(pandas.read_csv("transactions.csv"))
 for row in rows:
 	try:
 		count = cursor.execute("""
-		INSERT INTO [dbo].[Block Transactions] (Hash, Nonce, Block_Hash, Block_Number, Transaction_Index, From_Address, To_Address, Value, Gas, Gas_Price, Input, Timestamp, Max_Fee_Per_Gas, Max_Priority_Fee_Per_Gas, Transaction_Type, Sensor_ID, Vehicle_ID) 
+		INSERT INTO [dbo].[Block Transactions] (Hash, Nonce, Block_Hash, Block_Number, Transaction_Index, From_Address, To_Address, Value, Gas, Gas_Price, Input, Timestamp, Max_Fee_Per_Gas, Max_Priority_Fee_Per_Gas, Transaction_Type, Sensor_ID, User_ID, Vehicle_ID, CarPark_ID) 
 		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
-		row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8], row[9], row[10], row[11], 0, 0, 0, random.randint(0,150), random,randit(0,50)).rowcount
+		row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8], row[9], row[10], row[11], 0, 0, 0, random.randint(1,2000), getUser_ID(), getVehicle_ID(), random.randint(1,4)).rowcount
 		cnxn.commit()
 
 		print("Row Inserted")
@@ -178,6 +220,3 @@ print ("Updated Transactions Table in database")
 
 # truffle development blockchain address
 #blockchain_address = 'http://127.0.0.1:9545'
-
-# ganache transaction address COB-Edge
-#0x8fA20508f768806159A9Eb57c08dfA98748E33d7
