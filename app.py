@@ -27,6 +27,7 @@ def on_message(client, userdata, msg):
 		set_IoT(str(m_decode))
 		#print("Message received", m_decode)
 
+# Function with query to get all users with a vehicle and place them in an array
 def getUser_ID():
     count = cursor.execute("SELECT u.[User_ID], v.[Vehicle_ID] FROM [dbo].[Vehicle] v LEFT JOIN [dbo].[User] u ON v.[User_ID] = u.[User_ID]")
     user_result = count.fetchall()
@@ -37,6 +38,7 @@ def getUser_ID():
     #print(users)
     return users
 
+# Function with query to get all associated vehicles of a user and place them in an array
 def getVehicle_ID():
     count = cursor.execute("SELECT u.[User_ID], v.[Vehicle_ID] FROM [dbo].[Vehicle] v LEFT JOIN [dbo].[User] u ON v.[User_ID] = u.[User_ID]")
     vehicles_result = count.fetchall()
@@ -47,6 +49,7 @@ def getVehicle_ID():
     #print(vehicles)
     return vehicles
 
+# 2D array that combines both vehicles and their owner users
 def getMulti_ID():
     for i in vehicles:
         multi[0].append(i)
@@ -54,7 +57,8 @@ def getMulti_ID():
     for j in users:
         multi[1].append(j)
 
-    print(multi)
+    print("Vehicles: ", multi[0])
+    print("Users: ", multi[1])
     
 def set_IoT(msg):
 	jsonMsg = json.loads(msg)
@@ -72,6 +76,8 @@ def set_IoT(msg):
 	iot = IoT(id, timestamp, desc, type, v1, v2, v3, Latitude, Longitude)
 	arr.append(iot)
 
+	print("IoT Object: ", iot)
+
 class IoT: 
     def __init__(self, id, timestamp, desc, type, v1, v2, v3, lat, long):
         self.id = id
@@ -84,8 +90,11 @@ class IoT:
         self.lat = lat
         self.long = long
     
-def __str__(self):
-	return str(self.__dict__)
+    def __str__(self):
+        return str(self.__dict__)
+
+    def getID():
+        return id
 
 broker = "broker.hivemq.com"
 client = mqtt.Client("cob-edge-1", clean_session = True)
@@ -137,10 +146,9 @@ contract = web3.eth.contract(address=deployed_contract_address, abi=contract_abi
 
 getUser_ID()
 getVehicle_ID()
+#getMulti_ID()
 
 time.sleep(2)
-
-getMulti_ID()
 
 run = True
 Timeout = 30
@@ -153,9 +161,8 @@ while run:
 	last_msg_in = client._last_msg_in
 
 	now = time.monotonic()
-	#print("IoT Object: ", iot)
 
-	# Counter for the MQTT message timeout
+	# Counter for the MQTT message timeou
 	#print(now - last_msg_in)
 
 	if now - last_msg_in > Timeout:
@@ -166,23 +173,23 @@ while run:
 
 # Get and print the size of the IoT array
 size = len(arr)
-print(size)
+print("Size:", size)
+
+#for iot in arr:
+#	print(iot.id)
 
 # Call contract function and push IoT data into blockchain (this is persisted to the blockchain)
-#for iot in arr:
-#	print("IoT Object: ", iot)
-#	latitude = iot.lat
-#	longitude = iot.long
-#	contract.functions.createTask(iot.id, iot.timestamp, iot.desc, iot.type, iot.v1, iot.v2, iot.v3, str(latitude), str(longitude)).transact()
-#	time.sleep(2)
+for iot in arr:
+	print("IoT Object: ", iot)
+	latitude = iot.lat
+	longitude = iot.long
+	contract.functions.createTask(iot.id, iot.timestamp, iot.desc, iot.type, iot.v1, iot.v2, iot.v3, str(latitude), str(longitude)).transact()
+	time.sleep(2)
 
 time.sleep(2)
 
 # Runs command to take new csv files and push into SQL
 # Gas price: 206404321000
-#Query to get all Vehicle_ID's for a user id 
-
-#query that gets 2 arrays, one is user id's other is asscoaited vehicle id, then searches and gets random valid vehicle id for user id'
 
 rows = numpy.array(pandas.read_csv("blocks.csv"))
 
@@ -208,8 +215,8 @@ for row in rows:
 	try:
 		count = cursor.execute("""
 		INSERT INTO [dbo].[Block Transactions] (Hash, Nonce, Block_Hash, Block_Number, Transaction_Index, From_Address, To_Address, Value, Gas, Gas_Price, Input, Timestamp, Max_Fee_Per_Gas, Max_Priority_Fee_Per_Gas, Transaction_Type, Sensor_ID, User_ID, Vehicle_ID, CarPark_ID) 
-		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
-		row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8], row[9], row[10], row[11], 0, 0, 0, random.randint(1,2000), getUser_ID(), getVehicle_ID(), random.randint(1,4)).rowcount
+		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+		row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8], row[9], row[10], row[11], 0, 0, 0, iot.id, getUser_ID(), getVehicle_ID(), random.randint(1,4)).rowcount
 		cnxn.commit()
 
 		print("Row Inserted")
@@ -220,3 +227,6 @@ print ("Updated Transactions Table in database")
 
 # truffle development blockchain address
 #blockchain_address = 'http://127.0.0.1:9545'
+
+# ETL command
+#ethereumetl export_blocks_and_transactions --start-block 0 --end-block 500000 --blocks-output blocks.csv --transactions-output transactions.csv --provider-uri http://127.0.0.1:8545
