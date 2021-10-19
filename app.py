@@ -30,25 +30,23 @@ def on_message(client, userdata, msg):
 		#print("Message received", m_decode)
 
 # Function with query to get all users with a vehicle and place them in an array
-def getUser_ID():
+def getUsers():
     count = cursor.execute("SELECT u.[User_ID], v.[Vehicle_ID] FROM [dbo].[Vehicle] v LEFT JOIN [dbo].[User] u ON v.[User_ID] = u.[User_ID]")
     user_result = count.fetchall()
 
     for row in user_result:
         users.append(row[0])
     
-    #print(users)
     return users
 
 # Function with query to get all associated vehicles of a user and place them in an array
-def getVehicle_ID():
+def getVehicles():
     count = cursor.execute("SELECT u.[User_ID], v.[Vehicle_ID] FROM [dbo].[Vehicle] v LEFT JOIN [dbo].[User] u ON v.[User_ID] = u.[User_ID]")
     vehicles_result = count.fetchall()
 
     for row in vehicles_result:
         vehicles.append(row[1])
     
-    #print(vehicles)
     return vehicles
 
 # 2D array that combines both vehicles and their owner users
@@ -67,7 +65,6 @@ def getBlock():
     count = cursor.execute("SELECT TOP (1) [Block_Number] FROM [dbo].[Block Transactions] ORDER BY Block_Number DESC")
     blockNo = count.fetchone()[0] + 1
 
-    #print(blockNo)
     return blockNo
 
 def set_IoT(msg):
@@ -103,9 +100,6 @@ class IoT:
     def __str__(self):
         return str(self.__dict__)
 
-    def getID():
-        return id
-
 broker = "broker.hivemq.com"
 client = mqtt.Client("cob-edge-1", clean_session = True)
 
@@ -131,10 +125,13 @@ password = 'Aoed7Test'
 cnxn = pyodbc.connect('DRIVER={ODBC Driver 17 for SQL Server};SERVER='+server+';DATABASE='+database+';UID='+username+';PWD='+ password)
 cursor = cnxn.cursor()
 
-arr = []
-users = []
-vehicles = []
-multi = [[], []]
+arr = []			# IoT object array
+users = []			# User ID array
+vehicles = []		# Vehicle ID array
+multi = [[], []]	# 2D vehicle ID & user ID array
+
+getUsers()
+getVehicles()
 
 client.on_connect = on_connect
 client.on_disconnect = on_disconnect
@@ -158,7 +155,7 @@ contract = web3.eth.contract(address=deployed_contract_address, abi=contract_abi
 time.sleep(2)
 
 run = True
-Timeout = 30
+Timeout = 2
 
 print("Waiting for messages...")
 
@@ -178,20 +175,13 @@ while run:
 		client.disconnect()
 		run = False
 
-# Get and print the size of the IoT array
-size = len(arr)
-print("Size:", size)
-
-for iot in arr:
-	print(iot.id)
-
 # Call contract function and push IoT data into blockchain (this is persisted to the blockchain)
-#for iot in arr:
-#	print("IoT Object: ", iot)
-#	latitude = iot.lat
-#	longitude = iot.long
-#	contract.functions.createTask(iot.id, iot.timestamp, iot.desc, iot.type, iot.v1, iot.v2, iot.v3, str(latitude), str(longitude)).transact()
-#	time.sleep(2)
+for iot in arr:
+	print("IoT Object: ", iot)
+	latitude = iot.lat
+	longitude = iot.long
+	contract.functions.createTask(iot.id, iot.timestamp, iot.desc, iot.type, iot.v1, iot.v2, iot.v3, str(latitude), str(longitude)).transact()
+	time.sleep(2)
 
 time.sleep(2)
 
@@ -199,9 +189,15 @@ time.sleep(2)
 current = getBlock()
 print(current)
 
-#subprocess.run(['ethereumetl', 'export_blocks_and_transactions', '--start-block', str(current), '--end-block', '500000', '--blocks-output', 'blocks.csv', '--transactions-output', 'transactions.csv', '--provider-uri', 'http://127.0.0.1:8545'])
+#print("Random ID:", random.sample(arr, 1)[0].id)
 
-rows = numpy.array(pandas.read_csv("blocks.csv"))
+#print("Random User:", random.sample(users, 1)[0])
+
+#print("Random Vehicle:", random.sample(vehicles, 1)[0])
+
+subprocess.run(['ethereumetl', 'export_blocks_and_transactions', '--start-block', str(current), '--end-block', '500000', '--blocks-output', 'blocks.csv', '--transactions-output', 'transactions.csv', '--provider-uri', 'http://127.0.0.1:8545'])
+
+#rows = numpy.array(pandas.read_csv("blocks.csv"))
 
 # Insert query for Blocks
 for row in rows:
@@ -226,7 +222,7 @@ for row in rows:
 		count = cursor.execute("""
 		INSERT INTO [dbo].[Block Transactions] (Hash, Nonce, Block_Hash, Block_Number, Transaction_Index, From_Address, To_Address, Value, Gas, Gas_Price, Input, Timestamp, Max_Fee_Per_Gas, Max_Priority_Fee_Per_Gas, Transaction_Type, Sensor_ID, User_ID, Vehicle_ID, CarPark_ID) 
 		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
-		row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7], random.randrange(206404210000, 206404420000), row[9], row[10], row[11], 0, 0, 0, random.randint(1,2000), getUser_ID(), getVehicle_ID(), random.randint(1,4)).rowcount
+		row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8], row[9], row[10], row[11], 0, 0, 0, random.sample(arr, 1)[0].id, random.sample(users, 1)[0], random.sample(vehicles, 1)[0], random.randint(1,4)).rowcount
 		cnxn.commit()
 
 		print("Row Inserted")
