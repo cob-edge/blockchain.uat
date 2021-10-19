@@ -49,18 +49,7 @@ def getVehicles():
     
     return vehicles
 
-# 2D array that combines both vehicles and their owner users
-def getMulti_ID():
-    for i in vehicles:
-        multi[0].append(i)
-
-    for j in users:
-        multi[1].append(j)
-
-    print("Vehicles: ", multi[0])
-    print("Users: ", multi[1])
-    return multi
-
+# Function to get the current latest block number from the blockchain to start mining from
 def getBlock():
     count = cursor.execute("SELECT TOP (1) [Block_Number] FROM [dbo].[Block Transactions] ORDER BY Block_Number DESC")
     blockNo = count.fetchone()[0] + 1
@@ -128,7 +117,6 @@ cursor = cnxn.cursor()
 arr = []			# IoT object array
 users = []			# User ID array
 vehicles = []		# Vehicle ID array
-multi = [[], []]	# 2D vehicle ID & user ID array
 
 getUsers()
 getVehicles()
@@ -155,7 +143,7 @@ contract = web3.eth.contract(address=deployed_contract_address, abi=contract_abi
 time.sleep(2)
 
 run = True
-Timeout = 2
+Timeout = 30		# Timeout variable waits 30 seconds from last msg received before exeting while loop
 
 print("Waiting for messages...")
 
@@ -175,29 +163,23 @@ while run:
 		client.disconnect()
 		run = False
 
-# Call contract function and push IoT data into blockchain (this is persisted to the blockchain)
+# Call contract function and push IoT data into blockchain (given delay of 2 seconds to prevent Ganache from crashing) 
 for iot in arr:
 	print("IoT Object: ", iot)
 	latitude = iot.lat
 	longitude = iot.long
 	contract.functions.createTask(iot.id, iot.timestamp, iot.desc, iot.type, iot.v1, iot.v2, iot.v3, str(latitude), str(longitude)).transact()
-	time.sleep(2)
+	time.sleep(2)	
 
 time.sleep(2)
 
-# Runs command to take new csv files and push into SQL
-current = getBlock()
-print(current)
-
-#print("Random ID:", random.sample(arr, 1)[0].id)
-
-#print("Random User:", random.sample(users, 1)[0])
-
-#print("Random Vehicle:", random.sample(vehicles, 1)[0])
+# Ethereum ETL call to get updated blockchain data in csv format
 
 subprocess.run(['ethereumetl', 'export_blocks_and_transactions', '--start-block', str(current), '--end-block', '500000', '--blocks-output', 'blocks.csv', '--transactions-output', 'transactions.csv', '--provider-uri', 'http://127.0.0.1:8545'])
 
-#rows = numpy.array(pandas.read_csv("blocks.csv"))
+# Runs command to take new csv files and push blockchain data into SQL
+
+rows = numpy.array(pandas.read_csv("blocks.csv"))
 
 # Insert query for Blocks
 for row in rows:
@@ -219,13 +201,17 @@ rows = numpy.array(pandas.read_csv("transactions.csv"))
 # Insert query for Transactions
 for row in rows:
 	try:
+		vehicleID = random.sample(vehicles, 1)[0]
+		index = vehicles.index(vehicleID)
+		userID = users[index]
+
 		count = cursor.execute("""
 		INSERT INTO [dbo].[Block Transactions] (Hash, Nonce, Block_Hash, Block_Number, Transaction_Index, From_Address, To_Address, Value, Gas, Gas_Price, Input, Timestamp, Max_Fee_Per_Gas, Max_Priority_Fee_Per_Gas, Transaction_Type, Sensor_ID, User_ID, Vehicle_ID, CarPark_ID) 
 		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
-		row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8], row[9], row[10], row[11], 0, 0, 0, random.sample(arr, 1)[0].id, random.sample(users, 1)[0], random.sample(vehicles, 1)[0], random.randint(1,4)).rowcount
+		row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8], row[9], row[10], row[11], 0, 0, 0, random.sample(arr, 1)[0].id, userID, vehicleID, random.randint(1,4)).rowcount
 		cnxn.commit()
 
-		print("Row Inserted")
+		#print("Row Inserted")
 	except:
 		print("Unable to Insert")
 
