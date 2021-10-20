@@ -51,8 +51,11 @@ def getVehicles():
 
 # Function to get the current latest block number from the blockchain to start mining from
 def getBlock():
-    count = cursor.execute("SELECT TOP (1) [Block_Number] FROM [dbo].[Block] ORDER BY Block_Number DESC")
-    blockNo = count.fetchone()[0] + 1
+    try:
+        count = cursor.execute("SELECT TOP (1) [Block_Number] FROM [dbo].[Block] ORDER BY Block_Number DESC")
+        blockNo = count.fetchone()[0] + 1
+    except:
+        blockNo = 0
 
     return blockNo
 
@@ -73,7 +76,7 @@ def set_IoT(msg):
 	iot = IoT(id, timestamp, desc, type, v1, v2, v3, Latitude, Longitude)
 	arr.append(iot)
 
-	print("IoT Object: ", iot)
+	print("IoT object received: ", iot)
 
 # IoT object class
 class IoT: 
@@ -171,24 +174,22 @@ while run:
 		client.disconnect()
 		run = False
 
-# Call contract function and push IoT data into blockchain (given delay of 2 seconds to prevent Ganache from crashing) 
+# Call contract function and push IoT data into blockchain (given delay of 1 second to prevent Ganache from crashing) 
 for iot in arr:
-	print("IoT Object: ", iot)
+	print("IoT Object: ", iot, "added to blockchain")
 	latitude = iot.lat
 	longitude = iot.long
 	contract.functions.createTask(iot.id, iot.timestamp, iot.desc, iot.type, iot.v1, iot.v2, iot.v3, str(latitude), str(longitude)).transact()
-	time.sleep(2)	
+	time.sleep(1)	
 
 time.sleep(2)
 
 current = getBlock()
 
 # Ethereum ETL call to get updated blockchain data in csv format
-subprocess.run(['ethereumetl', 'export_blocks_and_transactions', '--start-block', '2196', '--end-block', '500000', '--blocks-output', 'blocks.csv', '--transactions-output', 'transactions.csv', '--provider-uri', 'http://127.0.0.1:8545'])
+subprocess.run(['ethereumetl', 'export_blocks_and_transactions', '--start-block', str(current), '--end-block', '500000', '--blocks-output', 'blocks.csv', '--transactions-output', 'transactions.csv', '--provider-uri', 'http://127.0.0.1:8545'])
 
-# Runs command to take new csv files and push blockchain data into SQL
-
-time.sleep(4)
+time.sleep(2)
 
 rows = numpy.array(pandas.read_csv("blocks.csv"))
 
@@ -206,6 +207,8 @@ for row in rows:
 		print("Unable to Insert")
 
 print ("Updated Block Table in database")
+
+time.sleep(2)
 
 rows = numpy.array(pandas.read_csv("transactions.csv"))
 
