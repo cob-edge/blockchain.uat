@@ -51,11 +51,12 @@ def getVehicles():
 
 # Function to get the current latest block number from the blockchain to start mining from
 def getBlock():
-    count = cursor.execute("SELECT TOP (1) [Block_Number] FROM [dbo].[Block Transactions] ORDER BY Block_Number DESC")
+    count = cursor.execute("SELECT TOP (1) [Block_Number] FROM [dbo].[Block] ORDER BY Block_Number DESC")
     blockNo = count.fetchone()[0] + 1
 
     return blockNo
 
+# IoT object constructor
 def set_IoT(msg):
 	jsonMsg = json.loads(msg)
 
@@ -74,6 +75,7 @@ def set_IoT(msg):
 
 	print("IoT Object: ", iot)
 
+# IoT object class
 class IoT: 
     def __init__(self, id, timestamp, desc, type, v1, v2, v3, lat, long):
         self.id = id
@@ -92,6 +94,12 @@ class IoT:
 broker = "broker.hivemq.com"
 client = mqtt.Client("cob-edge-1", clean_session = True)
 
+# Choose random Ganache account to use for transactions
+acc = random.randint(0, 9)
+print("Ganache account:", acc, "chosen for transactions")
+
+time.sleep(2)
+
 # ganache development blockchain address
 blockchain_address = 'http://127.0.0.1:8545'
 
@@ -99,7 +107,7 @@ blockchain_address = 'http://127.0.0.1:8545'
 web3 = Web3(HTTPProvider(blockchain_address))
 
 # Set the default account (so we don't need to set the "from" for every transaction call)
-web3.eth.defaultAccount = web3.eth.accounts[0]
+web3.eth.defaultAccount = web3.eth.accounts[acc]
 
 # Path to the compiled contract JSON file
 compiled_contract_path = 'build/contracts/IoT.json'
@@ -173,11 +181,14 @@ for iot in arr:
 
 time.sleep(2)
 
-# Ethereum ETL call to get updated blockchain data in csv format
+current = getBlock()
 
-subprocess.run(['ethereumetl', 'export_blocks_and_transactions', '--start-block', str(current), '--end-block', '500000', '--blocks-output', 'blocks.csv', '--transactions-output', 'transactions.csv', '--provider-uri', 'http://127.0.0.1:8545'])
+# Ethereum ETL call to get updated blockchain data in csv format
+subprocess.run(['ethereumetl', 'export_blocks_and_transactions', '--start-block', '2196', '--end-block', '500000', '--blocks-output', 'blocks.csv', '--transactions-output', 'transactions.csv', '--provider-uri', 'http://127.0.0.1:8545'])
 
 # Runs command to take new csv files and push blockchain data into SQL
+
+time.sleep(4)
 
 rows = numpy.array(pandas.read_csv("blocks.csv"))
 
@@ -201,6 +212,7 @@ rows = numpy.array(pandas.read_csv("transactions.csv"))
 # Insert query for Transactions
 for row in rows:
 	try:
+		sensorID = random.sample(arr, 1)[0].id
 		vehicleID = random.sample(vehicles, 1)[0]
 		index = vehicles.index(vehicleID)
 		userID = users[index]
@@ -208,10 +220,10 @@ for row in rows:
 		count = cursor.execute("""
 		INSERT INTO [dbo].[Block Transactions] (Hash, Nonce, Block_Hash, Block_Number, Transaction_Index, From_Address, To_Address, Value, Gas, Gas_Price, Input, Timestamp, Max_Fee_Per_Gas, Max_Priority_Fee_Per_Gas, Transaction_Type, Sensor_ID, User_ID, Vehicle_ID, CarPark_ID) 
 		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
-		row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8], row[9], row[10], row[11], 0, 0, 0, random.sample(arr, 1)[0].id, userID, vehicleID, random.randint(1,4)).rowcount
+		row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8], row[9], row[10], row[11], 0, 0, 0, sensorID, userID, vehicleID, random.randint(1,4)).rowcount
 		cnxn.commit()
 
-		#print("Row Inserted")
+		print("Row Inserted")
 	except:
 		print("Unable to Insert")
 
