@@ -54,10 +54,12 @@ def getBlock():
     try:
         count = cursor.execute("SELECT TOP (1) [Block_Number] FROM [dbo].[Block] ORDER BY Block_Number DESC")
         blockNo = count.fetchone()[0] + 1
+
+        return blockNo
     except:
         blockNo = 0
 
-    return blockNo
+        return blockNo
 
 # IoT object constructor
 def set_IoT(msg):
@@ -98,7 +100,7 @@ broker = "broker.hivemq.com"
 client = mqtt.Client("cob-edge-1", clean_session = True)
 
 # Choose random Ganache account to use for transactions
-acc = random.randint(0, 9)
+acc = random.randint(0, 99)
 print("Ganache account:", acc, "chosen for transactions")
 
 time.sleep(2)
@@ -110,13 +112,13 @@ blockchain_address = 'http://127.0.0.1:8545'
 web3 = Web3(HTTPProvider(blockchain_address))
 
 # Set the default account (so we don't need to set the "from" for every transaction call)
-web3.eth.defaultAccount = web3.eth.accounts[acc]
+web3.eth.defaultAccount = web3.eth.accounts[0]
 
 # Path to the compiled contract JSON file
 compiled_contract_path = 'build/contracts/IoT.json'
 
 # Deployed contract address (see `migrate` command output: `contract address`)
-deployed_contract_address = '0x8fA20508f768806159A9Eb57c08dfA98748E33d7'
+deployed_contract_address = '0x53F10682Fd87AB7CC41c4701DB41eb6bB0bBF522'
 
 server = 'tcp:cob-edge.database.windows.net' 
 database = 'IoTDB' 
@@ -154,7 +156,7 @@ contract = web3.eth.contract(address=deployed_contract_address, abi=contract_abi
 time.sleep(2)
 
 run = True
-Timeout = 30		# Timeout variable waits 30 seconds from last msg received before exeting while loop
+Timeout = 15		# Timeout variable waits 15 seconds from last msg received before exeting while loop
 
 print("Waiting for messages...")
 
@@ -185,6 +187,7 @@ for iot in arr:
 time.sleep(2)
 
 current = getBlock()
+fixedGas = 206404321000
 
 # Ethereum ETL call to get updated blockchain data in csv format
 subprocess.run(['ethereumetl', 'export_blocks_and_transactions', '--start-block', str(current), '--end-block', '500000', '--blocks-output', 'blocks.csv', '--transactions-output', 'transactions.csv', '--provider-uri', 'http://127.0.0.1:8545'])
@@ -201,7 +204,7 @@ for row in rows:
 		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
 		row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8], row[9], row[10], row[11], row[12], row[13], row[14], row[15], row[16], row[17], 0).rowcount
 		cnxn.commit()
-
+	
 		print("Row Inserted")
 	except:
 		print("Unable to Insert")
@@ -219,18 +222,23 @@ for row in rows:
 		vehicleID = random.sample(vehicles, 1)[0]
 		index = vehicles.index(vehicleID)
 		userID = users[index]
-
+	
 		count = cursor.execute("""
 		INSERT INTO [dbo].[Block Transactions] (Hash, Nonce, Block_Hash, Block_Number, Transaction_Index, From_Address, To_Address, Value, Gas, Gas_Price, Input, Timestamp, Max_Fee_Per_Gas, Max_Priority_Fee_Per_Gas, Transaction_Type, Sensor_ID, User_ID, Vehicle_ID, CarPark_ID) 
 		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
 		row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8], row[9], row[10], row[11], 0, 0, 0, sensorID, userID, vehicleID, random.randint(1,4)).rowcount
 		cnxn.commit()
-
+	
 		print("Row Inserted")
 	except:
 		print("Unable to Insert")
 
 print ("Updated Transactions Table in database")
 
-# truffle development blockchain address
-#blockchain_address = 'http://127.0.0.1:9545'
+time.sleep(1)
+
+print("\n----Script Complete----\n")
+
+time.sleep(1)
+
+print("On behalf of team Edge thank you for running our script!\n")
