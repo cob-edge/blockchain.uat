@@ -100,7 +100,7 @@ broker = "broker.hivemq.com"
 client = mqtt.Client("cob-edge-1", clean_session = True)
 
 # Choose random Ganache account to use for transactions
-acc = random.randint(0, 99)
+acc = random.randint(0, 9)
 print("Ganache account:", acc, "chosen for transactions")
 
 time.sleep(2)
@@ -112,7 +112,7 @@ blockchain_address = 'http://127.0.0.1:8545'
 web3 = Web3(HTTPProvider(blockchain_address))
 
 # Set the default account (so we don't need to set the "from" for every transaction call)
-web3.eth.defaultAccount = web3.eth.accounts[0]
+web3.eth.defaultAccount = web3.eth.accounts[acc]
 
 # Path to the compiled contract JSON file
 compiled_contract_path = 'build/contracts/IoT.json'
@@ -156,7 +156,7 @@ contract = web3.eth.contract(address=deployed_contract_address, abi=contract_abi
 time.sleep(2)
 
 run = True
-Timeout = 15		# Timeout variable waits 15 seconds from last msg received before exeting while loop
+Timeout = 10		# Timeout variable waits 20 seconds from last msg received before exeting while loop
 
 print("Waiting for messages...")
 
@@ -176,22 +176,29 @@ while run:
 		client.disconnect()
 		run = False
 
-# Call contract function and push IoT data into blockchain (given delay of 1 second to prevent Ganache from crashing) 
+# Call contract function and push IoT data into blockchain (given delay of 4 seconds to prevent Ganache from crashing) 
+i = 0
+
 for iot in arr:
 	print("IoT Object: ", iot, "added to blockchain")
 	latitude = iot.lat
 	longitude = iot.long
 	contract.functions.createTask(iot.id, iot.timestamp, iot.desc, iot.type, iot.v1, iot.v2, iot.v3, str(latitude), str(longitude)).transact()
-	time.sleep(1)	
+	time.sleep(3.5) # gives ganache a breather 	
 
 time.sleep(2)
 
 current = getBlock()
+
+# Gas value based on our blockchain Gas values on Ganache
 fixedGas = 206404321000
 
 # Ethereum ETL call to get updated blockchain data in csv format
 subprocess.run(['ethereumetl', 'export_blocks_and_transactions', '--start-block', str(current), '--end-block', '500000', '--blocks-output', 'blocks.csv', '--transactions-output', 'transactions.csv', '--provider-uri', 'http://127.0.0.1:8545'])
 
+print("\nEthereum ETL command finished executing\n")
+
+# Sleep implemented to give break bewteen running previous ETL command and running SQL inserts
 time.sleep(2)
 
 rows = numpy.array(pandas.read_csv("blocks.csv"))
@@ -226,7 +233,7 @@ for row in rows:
 		count = cursor.execute("""
 		INSERT INTO [dbo].[Block Transactions] (Hash, Nonce, Block_Hash, Block_Number, Transaction_Index, From_Address, To_Address, Value, Gas, Gas_Price, Input, Timestamp, Max_Fee_Per_Gas, Max_Priority_Fee_Per_Gas, Transaction_Type, Sensor_ID, User_ID, Vehicle_ID, CarPark_ID) 
 		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
-		row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8], row[9], row[10], row[11], 0, 0, 0, sensorID, userID, vehicleID, random.randint(1,4)).rowcount
+		row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7], (fixedGas + random.randint(0, 51601080251)), row[9], row[10], row[11], 0, 0, 0, sensorID, 14, vehicleID, random.randint(1,4)).rowcount
 		cnxn.commit()
 	
 		print("Row Inserted")
@@ -237,8 +244,4 @@ print ("Updated Transactions Table in database")
 
 time.sleep(1)
 
-print("\n----Script Complete----\n")
-
-time.sleep(1)
-
-print("On behalf of team Edge thank you for running our script!\n")
+print("\n----Script Complete----\n\nOn behalf of team Edge, thank you for running our script!\n")
